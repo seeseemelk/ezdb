@@ -30,7 +30,7 @@ interface Repository(Entity)
     /**
     Finds an entity by its primary key.
     */
-    Entity find(TypeOfPrimaryKey!Entity id);
+    Entity find(PrimaryKeyType!Entity id);
 
     /**
     Returns a list of all entities in the repository.
@@ -40,7 +40,7 @@ interface Repository(Entity)
     /**
     Removes an entity by its primary key.
     */
-    void remove(TypeOfPrimaryKey!Entity id);
+    void remove(PrimaryKeyType!Entity id);
 
     /**
     Removes an entity.

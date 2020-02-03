@@ -14,9 +14,9 @@ enum primaryKey; // @suppress(dscanner.style.phobos_naming_convention)
 /**
 Aliases to the type of the primary key of an entity.
 */
-template TypeOfPrimaryKey(Type)
+template PrimaryKeyType(Type)
 {
-    alias TypeOfPrimaryKey = typeof(PrimaryKey!Type);
+    alias PrimaryKeyType = typeof(PrimaryKeySymbol!Type);
 }
 
 /**
@@ -33,17 +33,17 @@ The `PrimaryKeyType` template returns the type of the primary key.
         int b;
     }
 
-    assert(is(TypeOfPrimaryKey!MyEntity == int));
+    assert(is(PrimaryKeyType!MyEntity == int));
 }
 
 /**
 Aliases to the symbol that is the primary key of an entity.
 */
-template PrimaryKey(Type)
+template PrimaryKeySymbol(Type)
 {
     static if (getSymbolsByUDA!(Type, primaryKey).length == 1)
     {
-        alias PrimaryKey = getSymbolsByUDA!(Type, primaryKey)[0];
+        alias PrimaryKeySymbol = getSymbolsByUDA!(Type, primaryKey)[0];
     }
     else
     {
@@ -63,13 +63,23 @@ template PrimaryKey(Type)
         int secondId;
     }
 
-    assert(!__traits(compiles, PrimaryKey!MyEntity));
+    assert(!__traits(compiles, PrimaryKeySymbol!MyEntity));
+}
+
+@("Cannot compile PrimaryKey with no primary keys")
+@safe @nogc pure unittest
+{
+    static struct MyEntity
+    {
+    }
+
+    assert(!__traits(compiles, PrimaryKeySymbol!MyEntity));
 }
 
 /**
 Gets a reference to the primary key of an entity.
 */
-ref auto getPrimaryKey(Entity)(Entity entity)
+ref auto getPrimaryKey(Entity)(Entity entity) // @suppress(dscanner.suspicious.unused_parameter)
 {
     return __traits(getMember, entity, getSymbolsByUDA!(typeof(entity), primaryKey)[0].stringof);
 }

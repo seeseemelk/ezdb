@@ -68,11 +68,11 @@ class SqliteDriver(Db : Repository!Entity, Entity) : Db
         _db.run(CreationStatement!Entity);
     }
 
-    private TypeOfPrimaryKey!Entity lastRowId()
+    private PrimaryKeyType!Entity lastRowId()
     {
         return _db
             .execute("SELECT last_insert_rowid()")
-            .oneValue!(TypeOfPrimaryKey!Entity);
+            .oneValue!(PrimaryKeyType!Entity);
     }
 
     override void close()
@@ -80,12 +80,12 @@ class SqliteDriver(Db : Repository!Entity, Entity) : Db
         _db.close();
     }
 
-    override void remove(TypeOfPrimaryKey!Entity id)
+    override void remove(PrimaryKeyType!Entity id)
     {
         assert(0, "Not implemented");
     }
 
-    override Entity find(TypeOfPrimaryKey!Entity id)
+    override Entity find(PrimaryKeyType!Entity id)
     {
         auto statement = _db.prepare(text("SELECT * FROM ", Table, " WHERE ",
             IdColumn, " = :id"));
