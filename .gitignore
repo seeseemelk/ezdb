@@ -1,0 +1,17 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/ezdb
+ezdb.so
+ezdb.dylib
+ezdb.dll
+ezdb.a
+ezdb.lib
+ezdb-test-*
+*.exe
+*.o
+*.obj
+*.lst
+*.a
+*.db
