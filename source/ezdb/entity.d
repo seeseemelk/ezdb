@@ -83,3 +83,11 @@ ref auto getPrimaryKey(Entity)(Entity entity) // @suppress(dscanner.suspicious.u
 {
     return __traits(getMember, entity, getSymbolsByUDA!(typeof(entity), primaryKey)[0].stringof);
 }
+
+/**
+Sets the primary key of an entity.
+*/
+void setPrimaryKey(Entity, Id = PrimaryKeyType!Entity)(ref Entity entity, Id key) // @suppress(dscanner.suspicious.unused_parameter)
+{
+    __traits(getMember, entity, getSymbolsByUDA!(typeof(entity), primaryKey)[0].stringof) = key;
+}
