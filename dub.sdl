@@ -1,5 +1,5 @@
 name "ezdb"
-description "A declarative SQL library"
+description "A declarative SQL library similary to Spring Data"
 authors "Sebastiaan de Schaetzen"
 copyright "Copyright © 2020, Sebastiaan de Schaetzen"
 license "MIT"
