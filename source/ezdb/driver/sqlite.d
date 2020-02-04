@@ -82,7 +82,10 @@ class SqliteDriver(Db : Repository!Entity, Entity) : Db
 
     override void remove(PrimaryKeyType!Entity id)
     {
-        assert(0, "Not implemented");
+        auto statement = _db.prepare(text("DELETE FROM ", Table, " WHERE ", IdColumn, " = :id"));
+        statement.bind(":id", id);
+        statement.execute();
+        statement.reset();
     }
 
     override Entity find(PrimaryKeyType!Entity id)
@@ -235,4 +238,21 @@ unittest
     const saved = db.save(toSave);
 
     assert(db.findAll() == [saved], "Did not correctly retrieve all results");
+}
+
+@("remove() should remove an instance")
+unittest
+{
+    static struct Entity
+    {
+        @primaryKey int id;
+        int value;
+    }
+    static interface Repo : Repository!Entity {}
+    auto db = new SqliteDriver!Repo(":memory:");
+    scope(exit) db.close();
+
+    Entity toSave;
+    const saved = db.save(toSave);
+    db.remove(saved.id);
 }
