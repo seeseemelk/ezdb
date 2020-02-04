@@ -15,3 +15,4 @@ ezdb-test-*
 *.lst
 *.a
 *.db
+*.s
