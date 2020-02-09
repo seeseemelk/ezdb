@@ -7,6 +7,7 @@ import ezdb.repository;
 import ezdb.entity;
 
 import d2sqlite3;
+import optional;
 
 import std.conv;
 import std.stdio;
@@ -88,15 +89,17 @@ class SqliteDriver(Db : Repository!Entity, Entity) : Db
         statement.reset();
     }
 
-    override Entity find(PrimaryKeyType!Entity id)
+    override Optional!Entity find(PrimaryKeyType!Entity id)
     {
         auto statement = _db.prepare(text("SELECT * FROM ", Table, " WHERE ",
             IdColumn, " = :id"));
         statement.bind(":id", id);
         auto results = statement.execute();
+        if (results.empty)
+            return no!Entity;
         auto result = results.front().as!Entity;
         statement.reset();
-        return result;
+        return some(result);
     }
 
     override Entity[] findAll()
@@ -124,7 +127,7 @@ class SqliteDriver(Db : Repository!Entity, Entity) : Db
         }
         statement.execute();
         statement.reset();
-        return find(lastRowId());
+        return find(lastRowId()).front;
     }
 }
 
@@ -255,4 +258,19 @@ unittest
     Entity toSave;
     const saved = db.save(toSave);
     db.remove(saved.id);
+}
+
+@("find() should return an empty optional if no row can be found")
+unittest
+{
+    static struct Entity
+    {
+        @primaryKey int id;
+        int value;
+    }
+    static interface Repo : Repository!Entity {}
+    auto db = new SqliteDriver!Repo(":memory:");
+    scope(exit) db.close();
+
+    assert(db.find(0).empty, "Result was not empty");
 }

@@ -1,6 +1,7 @@
 module ezdb.repository;
 
 import ezdb.entity;
+import optional;
 
 /**
 A base interface describing the basic operations that can be performed on a
@@ -30,7 +31,7 @@ interface Repository(Entity)
     /**
     Finds an entity by its primary key.
     */
-    Entity find(PrimaryKeyType!Entity id);
+    Optional!Entity find(PrimaryKeyType!Entity id);
 
     /**
     Returns a list of all entities in the repository.
