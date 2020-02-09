@@ -5,6 +5,9 @@ module ezdb.driver.memory;
 
 import ezdb.repository;
 import ezdb.entity;
+
+import optional;
+
 import std.exception;
 
 /**
@@ -31,10 +34,11 @@ class MemoryDriver(Db : Repository!Entity, Entity) : Db
         return entity;
     }
 
-    override Entity find(PrimaryKeyType!Entity id)
+    override Optional!Entity find(PrimaryKeyType!Entity id)
     {
-        enforce(id in _entities);
-        return _entities[id];
+        if (id !in _entities)
+            return no!Entity;
+        return some(_entities[id]);
     }
 
     override Entity[] findAll()
