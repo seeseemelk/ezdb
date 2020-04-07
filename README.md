@@ -34,6 +34,55 @@ newEntity.someValue = "hello, world!";
 SomeEntity savedEntity = db.save(newEntity);
 ```
 
+## Foreign keys
+Foreign keys are now also supported.
+Support for foreign keys is purposefully limited as to avoid issues such as
+eager/lazy loading, partial data, and cascading.
+Use them with the following syntax:
+
+```d
+import ezdb;
+
+struct Author
+{
+	@primaryKey
+	int id;
+
+	string name;
+}
+
+struct Book
+{
+	@primaryKey
+	int id;
+
+	string name;
+
+	// Refer to the ID of the author of this book.
+	@foreign!Author
+	int author;
+}
+
+// Create the repositories
+interface AuthorRepository : Repository!Author {}
+interface BookRepository : Repository!Book {}
+
+// Open the repositories
+auto authorDb = makeRepository!AuthorRepository;
+auto bookDb = makeRepository!BookRepository;
+
+// Add an author
+Author stevenKing;
+stevenKing.name = "Steven King";
+stevenKing = authorDb.save(stevenKing);
+
+// Add a book
+Book theShining;
+theShining.name = "The Shining";
+theShining.author = stevenKing.id;
+theShining = bookDb.save(theShining);
+```
+
 ## Unit-testing
 A system requiring a database can easily be tested using the `mockRepository` function.
 ```d

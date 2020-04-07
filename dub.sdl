@@ -5,3 +5,11 @@ copyright "Copyright © 2020, Sebastiaan de Schaetzen"
 license "MIT"
 dependency "d2sqlite3" version="~>0.18.3"
 dependency "optional" version="~>1.0.0"
+configuration "library" {
+	targetType "library"
+}
+configuration "unittest" {
+	dependency "silly" version="~>1.0.2"
+	dependency "fluent-asserts" version="~>0.13.3"
+	targetType "library"
+}
