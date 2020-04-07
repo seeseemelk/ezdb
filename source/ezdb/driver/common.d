@@ -7,12 +7,16 @@ import ezdb.driver.sqlite;
 import ezdb.driver.memory;
 import ezdb.repository;
 
+private SqliteFactory factory = null;
+
 /**
 Returns an instance for a repository.
 */
 Db makeRepository(Db : Repository!Entity, Entity)()
 {
-    return new SqliteDriver!Db;
+    if (factory is null || factory.isClosed)
+        factory = new SqliteFactory();
+    return factory.open!Db();
 }
 
 /**
@@ -23,6 +27,7 @@ Db mockRepository(Db : Repository!Entity, Entity)()
     return new MemoryDriver!Db;
 }
 
+@("makeRepository can instantiate a repository")
 unittest
 {
     import ezdb.entity : primaryKey;

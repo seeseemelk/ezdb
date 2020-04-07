@@ -12,5 +12,6 @@ public
 {
     import ezdb.repository;
     import ezdb.entity : primaryKey;
+    import ezdb.foreign : foreign;
     import ezdb.driver.common;
 }
