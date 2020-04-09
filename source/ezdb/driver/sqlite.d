@@ -226,14 +226,14 @@ final class SqliteDriver(Db : Repository!Entity, Entity) : Db
     private enum createWhereClause(Query query)()
     {
         string[] clauses;
-        foreach (filter; query.filters)
+        static foreach (filter; query.filters)
         {
-            final switch (filter.type)
-            {
-            case QueryFilterType.equal:
+            static assert([FieldNameTuple!Entity].canFind(filter.column),
+                "The entity " ~ Entity.stringof ~ " does not have the column '" ~ filter.column ~ "'");
+            static if (filter.type == QueryFilterType.equal)
                 clauses ~= text(filter.column, "=?");
-                break;
-            }
+            else
+                static assert(0, "Unsupporterd filter type");
         }
         return clauses.join(" ");
     }
@@ -553,7 +553,7 @@ unittest
     entries.should.equal([Entry(1, "foo")]);
 }
 
-@("Multiple Custom select statement are supported")
+@("Multiple custom select statement are supported")
 unittest
 {
     static struct Entry
@@ -576,4 +576,23 @@ unittest
 
     db.findByName("bar").should.equal([Entry(2, 666, "bar")]);
     db.findByValue(1337).should.equal([Entry(1, 1337, "foo")]);
+}
+
+@("Cannot create interface with incorrect user-defined methods")
+unittest
+{
+    static struct Entry
+    {
+        @primaryKey int id;
+        int value;
+    }
+
+    static interface Repo : Repository!Entry
+    {
+        // Name is wrong on purpose
+        Entry[] findByColumn(int value);
+    }
+
+    __traits(compiles, SqliteDriver!Repo).should.equal(false)
+        .because("'findByColumn' is incorrect and should not compile");
 }
