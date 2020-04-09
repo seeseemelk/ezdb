@@ -6,6 +6,7 @@ module ezdb.driver.sqlite;
 import ezdb.repository;
 import ezdb.entity;
 import ezdb.foreign;
+import ezdb.query;
 
 import d2sqlite3;
 import optional;
@@ -16,6 +17,7 @@ import std.range;
 import std.algorithm;
 import std.traits;
 import std.exception;
+version(unittest) import fluent.asserts;
 
 /**
 The strategy used to create tables.
@@ -197,8 +199,90 @@ final class SqliteDriver(Db : Repository!Entity, Entity) : Db
         statement.reset();
         return find(lastRowId()).front;
     }
+
+    /*
+    Auto-implementation of custom queries.
+    */
+
+    private auto autoQuery(string query, Args...)(Args args)
+    {
+        enum query = parseQuery(query);
+        return executeQuery!query(args);
+    }
+
+    private Entity[] executeQuery(Query query, Args...)(Args args)
+    if (query.action == QueryAction.select)
+    {
+        Statement statement = _factory.db.prepare(text("SELECT * FROM ", Table, " WHERE ", createWhereClause!query));
+        statement.bindAll(args);
+        auto results = statement.execute();
+        Entity[] entities;
+        foreach (result; results)
+            entities ~= result.as!Entity;
+        statement.reset();
+        return entities;
+    }
+
+    private enum createWhereClause(Query query)()
+    {
+        string[] clauses;
+        foreach (filter; query.filters)
+        {
+            final switch (filter.type)
+            {
+            case QueryFilterType.equal:
+                clauses ~= text(filter.column, "=?");
+                break;
+            }
+        }
+        return clauses.join(" ");
+    }
+
+    // Add user-defined methods
+    static foreach (member; __traits(allMembers, Db))
+    {
+        // Make sure they are not standard methods.
+        static if (![__traits(allMembers, Repository!Entity)].canFind(member))
+        {
+            static assert(MemberFunctionsTuple!(Db, member).length == 1, "Overloading is not support in Db interfaces");
+            //alias parameters = DescribeParameters!(MemberFunctionsTuple!(Db, Member));
+            //pragma(msg, Parameters!(MemberFunctionsTuple!(Db, member).stringof));
+            mixin(`
+                Entity[] %member(%params)
+                {
+                    return autoQuery!("%member")(%args);
+                }
+            `
+            .replace("%member", member)
+            .replace("%params", makeParameterList!(MemberFunctionsTuple!(Db, member)[0]))
+            .replace("%args", makeArgumentList!(MemberFunctionsTuple!(Db, member)[0]))
+            .text());
+        }
+    }
 }
 
+/*
+Helper method for user-defined methods
+*/
+private string makeParameterList(alias func)()
+{
+    string[] params;
+    static foreach (parameter; Parameters!func)
+        params ~= parameter.stringof ~ " " ~ cast(char) (params.length + 'a');
+    return params.join(", ");
+}
+
+private string makeArgumentList(alias func)()
+{
+    string[] params;
+    static foreach (parameter; Parameters!func)
+        params ~= text(cast(char) (params.length + 'a'));
+    return params.join(", ");
+}
+
+/*
+Templates for statement generation
+*/
 private template CreationStatement(Entity)
 {
     static CreationStatement = text("CREATE TABLE IF NOT EXISTS ", Entity.stringof,
@@ -409,4 +493,87 @@ unittest
     Child child;
     child.child = parent.id;
     db.save(child);
+}
+
+@("Custom select statement finds only specific data")
+unittest
+{
+    static struct Entry
+    {
+        @primaryKey int id;
+        int value;
+
+        static Entry withValue(int value)
+        {
+            return Entry(0, value);
+        }
+    }
+
+    static interface Repo : Repository!Entry
+    {
+        Entry[] findByValue(int value);
+    }
+
+    auto db = new SqliteFactory(":memory:").open!Repo;
+    scope(exit) db.close();
+    db.save(Entry.withValue(2));
+    db.save(Entry.withValue(3));
+    db.save(Entry.withValue(4));
+    db.save(Entry.withValue(3));
+
+    Entry[] entries = db.findByValue(3);
+    entries.should.equal([Entry(2, 3), Entry(4, 3)]);
+}
+
+@("Custom select statement also works with strings")
+unittest
+{
+    static struct Entry
+    {
+        @primaryKey int id;
+        string name;
+
+        static Entry withName(string name)
+        {
+            return Entry(0, name);
+        }
+    }
+
+    static interface Repo : Repository!Entry
+    {
+        Entry[] findByName(string name);
+    }
+
+    Repo db = new SqliteFactory(":memory:").open!Repo;
+    scope(exit) db.close();
+    db.save(Entry.withName("foo"));
+    db.save(Entry.withName("bar"));
+
+    Entry[] entries = db.findByName("foo");
+    entries.should.equal([Entry(1, "foo")]);
+}
+
+@("Multiple Custom select statement are supported")
+unittest
+{
+    static struct Entry
+    {
+        @primaryKey int id;
+        int value;
+        string name;
+    }
+
+    static interface Repo : Repository!Entry
+    {
+        Entry[] findByValue(int value);
+        Entry[] findByName(string name);
+    }
+
+    Repo db = new SqliteFactory(":memory:").open!Repo;
+    scope(exit) db.close();
+    db.save(Entry(1, 1337, "foo"));
+    db.save(Entry(2, 666, "bar"));
+
+    db.findByName("bar").should.equal([Entry(2, 666, "bar")]);
+    db.findByValue(1337).should.equal([Entry(1, 1337, "foo")]);
 }
