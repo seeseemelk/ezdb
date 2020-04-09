@@ -83,6 +83,23 @@ theShining.author = stevenKing.id;
 theShining = bookDb.save(theShining);
 ```
 
+## User-Defined Methods / Custom Queries
+It is easy to add a custom query to a repository.
+This is done in nearly the same way as Hibernate does.
+
+Simply add a method to a repository, like this:
+```
+interface AuthorRepository : Repository!Book
+{
+	Book[] findByName(string name);
+	Book[] findByAuthor(int authorId);
+}
+```
+
+The following query types are supported:
+|=|=|
+| `find`/`select` | Searches for data, retrieving all data that was found. |
+
 ## Unit-testing
 A system requiring a database can easily be tested using the `mockRepository` function.
 ```d
