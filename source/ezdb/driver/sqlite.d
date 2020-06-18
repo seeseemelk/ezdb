@@ -301,6 +301,8 @@ private string parseCreationMembers(Entity)()
         // Add the SQL type identifier
         static if (is(typeof(member) == int))
             attributes ~= "INTEGER";
+        else static if (is(typeof(member) == bool))
+            attributes ~= "INTEGER";
         else static if (is(typeof(member) == string))
             attributes ~= "TEXT";
         else
@@ -595,4 +597,22 @@ unittest
 
     __traits(compiles, SqliteDriver!Repo).should.equal(false)
         .because("'findByColumn' is incorrect and should not compile");
+}
+
+@("save() can store booleans")
+unittest
+{
+    static struct Entity
+    {
+        @primaryKey int id;
+        bool value;
+    }
+    static interface Repo : Repository!Entity {}
+    auto db = new SqliteFactory(":memory:").open!Repo;
+    scope(exit) db.close();
+
+    auto entityA = db.save(Entity(0, true));
+    auto entityB = db.save(Entity(0, false));
+    assert(db.find(entityA.id).front.value == true);
+    assert(db.find(entityB.id).front.value == false);
 }
